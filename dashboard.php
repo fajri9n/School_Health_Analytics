@@ -5,7 +5,6 @@ ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 
 session_start();
-
 require_once "config/koneksi.php";
 
 if (!isset($_SESSION['id'])) {
@@ -18,6 +17,7 @@ $nama = $_SESSION['nama'] ?? 'Pengguna';
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
+    // Total data
     $totalSiswa = mysqli_fetch_assoc(
         mysqli_query($conn, "SELECT COUNT(*) AS total FROM siswa")
     );
@@ -31,16 +31,12 @@ try {
     );
 
     $totalPetugas = mysqli_fetch_assoc(
-        mysqli_query(
-            $conn,
-            "SELECT COUNT(*) AS total FROM users WHERE role = 'user'"
-        )
+        mysqli_query($conn, "SELECT COUNT(*) AS total FROM users WHERE role = 'user'")
     );
 
+    // Top 5 keluhan terbanyak
     $topKeluhan = mysqli_query($conn, "
-        SELECT
-            keluhan.nama_keluhan,
-            COUNT(*) AS jumlah
+        SELECT keluhan.nama_keluhan, COUNT(*) AS jumlah
         FROM kunjungan
         JOIN keluhan ON keluhan.id = kunjungan.keluhan_id
         GROUP BY keluhan.nama_keluhan
@@ -48,21 +44,18 @@ try {
         LIMIT 5
     ");
 
+    // 5 obat dengan stok terbanyak
+    // Tabel kunjungan tidak memiliki kolom obat_id
     $topObat = mysqli_query($conn, "
-        SELECT
-            obat.nama_obat,
-            COUNT(*) AS jumlah
-        FROM kunjungan
-        JOIN obat ON obat.id = kunjungan.obat_id
-        GROUP BY obat.nama_obat
-        ORDER BY jumlah DESC
+        SELECT nama_obat, stok AS jumlah
+        FROM obat
+        ORDER BY stok DESC
         LIMIT 5
     ");
 
+    // 5 kunjungan terbaru
     $recent = mysqli_query($conn, "
-        SELECT
-            kunjungan.*,
-            siswa.nama
+        SELECT kunjungan.*, siswa.nama
         FROM kunjungan
         JOIN siswa ON siswa.id = kunjungan.siswa_id
         ORDER BY tanggal DESC, jam DESC
@@ -71,19 +64,8 @@ try {
 
 } catch (Throwable $e) {
     error_log("Dashboard error: " . $e->getMessage());
-
     http_response_code(500);
-    echo "<!DOCTYPE html><html lang='id'><head>";
-    echo "<meta charset='UTF-8'>";
-    echo "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-    echo "<title>Error Dashboard</title></head><body>";
-    echo "<h2>Terjadi kesalahan pada dashboard</h2>";
-    echo "<p>Periksa struktur tabel dan konfigurasi database.</p>";
-    echo "<pre>" .
-        htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') .
-        "</pre>";
-    echo "</body></html>";
-    exit;
+    exit("Terjadi kesalahan saat memuat dashboard. Periksa struktur tabel dan konfigurasi database.");
 }
 ?>
 
@@ -95,13 +77,15 @@ try {
     <title>School Health Analytics Dashboard</title>
     <link rel="stylesheet" href="assets/css/dashboard.css">
 </head>
-
 <body>
 
+<!-- Tombol hamburger -->
 <button class="hamburger" id="hamburger">☰</button>
 
+<!-- Overlay sidebar -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h2>School Health</h2>
@@ -120,6 +104,7 @@ try {
     </nav>
 </aside>
 
+<!-- Konten utama -->
 <div class="main">
 
     <div class="header">
@@ -127,6 +112,7 @@ try {
         <p>Selamat datang, <b><?= htmlspecialchars($nama, ENT_QUOTES, 'UTF-8') ?></b></p>
     </div>
 
+    <!-- Kartu statistik -->
     <div class="cards">
 
         <a href="siswa/index.php" class="card">
@@ -155,6 +141,7 @@ try {
 
     </div>
 
+    <!-- Top keluhan dan obat -->
     <div class="content">
 
         <div class="box">
@@ -166,35 +153,48 @@ try {
                     <th>Jumlah</th>
                 </tr>
 
-                <?php while ($k = mysqli_fetch_assoc($topKeluhan)): ?>
-                <tr>
-                    <td><?= htmlspecialchars($k['nama_keluhan'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= (int) $k['jumlah'] ?></td>
-                </tr>
-                <?php endwhile; ?>
+                <?php if (mysqli_num_rows($topKeluhan) > 0): ?>
+                    <?php while ($k = mysqli_fetch_assoc($topKeluhan)): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($k['nama_keluhan'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= (int) $k['jumlah'] ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="2">Belum ada data keluhan.</td>
+                    </tr>
+                <?php endif; ?>
             </table>
         </div>
 
         <div class="box">
-            <h2>Top Obat</h2>
+            <h2>Stok Obat Terbanyak</h2>
 
             <table>
                 <tr>
-                    <th>Obat</th>
-                    <th>Jumlah</th>
+                    <th>Nama Obat</th>
+                    <th>Stok</th>
                 </tr>
 
-                <?php while ($o = mysqli_fetch_assoc($topObat)): ?>
-                <tr>
-                    <td><?= htmlspecialchars($o['nama_obat'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= (int) $o['jumlah'] ?></td>
-                </tr>
-                <?php endwhile; ?>
+                <?php if (mysqli_num_rows($topObat) > 0): ?>
+                    <?php while ($o = mysqli_fetch_assoc($topObat)): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($o['nama_obat'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= (int) $o['jumlah'] ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="2">Belum ada data obat.</td>
+                    </tr>
+                <?php endif; ?>
             </table>
         </div>
 
     </div>
 
+    <!-- Riwayat kunjungan -->
     <div class="history">
         <h2>Riwayat Terbaru</h2>
 
@@ -205,20 +205,26 @@ try {
                 <th>Kondisi</th>
             </tr>
 
-            <?php while ($r = mysqli_fetch_assoc($recent)): ?>
-            <tr>
-                <td><?= htmlspecialchars((string) $r['tanggal'], ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars((string) $r['nama'], ENT_QUOTES, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars((string) ($r['kondisi'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
-            </tr>
-            <?php endwhile; ?>
+            <?php if (mysqli_num_rows($recent) > 0): ?>
+                <?php while ($r = mysqli_fetch_assoc($recent)): ?>
+                    <tr>
+                        <td><?= htmlspecialchars((string) $r['tanggal'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($r['nama'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars((string) $r['kondisi'], ENT_QUOTES, 'UTF-8') ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="3">Belum ada riwayat kunjungan.</td>
+                </tr>
+            <?php endif; ?>
+
         </table>
     </div>
 
 </div>
 
 <script src="assets/js/dashboard.js"></script>
-
 </body>
 </html>
 ```
