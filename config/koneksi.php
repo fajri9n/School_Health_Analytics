@@ -1,20 +1,18 @@
+
 <?php
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "school_health_analytics";
+$host = "ftpupload.net";
+$user = "if0_43235745";
+$pass = "8dsl0NqGODUu1";
+$db   = "if0_43235745_school_health_analytics";
 
-$conn = @mysqli_connect($host, $user, $pass, $db);
-if (!$conn) {
-    // Fallback ke 127.0.0.1 jika socket localhost bermasalah
-    $conn = @mysqli_connect("127.0.0.1", $user, $pass, $db);
-}
+$conn = mysqli_connect($host, $user, $pass, $db);
 
 if (!$conn) {
-    die("Koneksi gagal: " . mysqli_connect_error());
+    error_log("Database connection failed: " . mysqli_connect_error());
+    http_response_code(500);
+    exit("Koneksi database gagal. Periksa konfigurasi hosting.");
 }
 
 mysqli_set_charset($conn, "utf8mb4");
 
-// Variabel alias untuk kompatibilitas
 $koneksi = $conn;
