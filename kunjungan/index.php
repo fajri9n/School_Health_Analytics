@@ -15,15 +15,12 @@ try {
             kunjungan.*,
             siswa.nama AS nama_siswa,
             keluhan.nama_keluhan,
-            obat.nama_obat,
             users.nama AS petugas
         FROM kunjungan
         LEFT JOIN siswa
             ON kunjungan.siswa_id = siswa.id
         LEFT JOIN keluhan
             ON kunjungan.keluhan_id = keluhan.id
-        LEFT JOIN obat
-            ON kunjungan.obat_id = obat.id
         LEFT JOIN users
             ON kunjungan.petugas_id = users.id
         ORDER BY kunjungan.tanggal DESC, kunjungan.jam DESC
@@ -31,9 +28,10 @@ try {
 } catch (Throwable $e) {
     error_log("Kunjungan index error: " . $e->getMessage());
     http_response_code(500);
-    exit("Gagal memuat data kunjungan. Periksa konfigurasi database dan struktur tabel.");
+    exit("Gagal memuat data kunjungan. Periksa error log hosting.");
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -51,9 +49,7 @@ try {
         <span>School Health Analytics</span>
     </div>
 
-    <div class="navbar-title">
-        Manajemen Data Kunjungan
-    </div>
+    <div class="navbar-title">Manajemen Data Kunjungan</div>
 
     <a href="../dashboard.php" class="btn-dashboard">
         ← Dashboard
@@ -90,73 +86,38 @@ try {
         </thead>
 
         <tbody>
-        <?php
-        $no = 1;
-        ?>
+        <?php if (mysqli_num_rows($query) > 0): ?>
+            <?php $no = 1; ?>
 
-        <?php while ($data = mysqli_fetch_assoc($query)): ?>
-            <tr>
-                <td><?= $no++; ?></td>
+            <?php while ($data = mysqli_fetch_assoc($query)): ?>
+                <tr>
+                    <td><?= $no++; ?></td>
+                    <td><?= htmlspecialchars((string)$data['tanggal'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?= htmlspecialchars((string)$data['jam'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?= htmlspecialchars((string)($data['jam_keluar'] ?? '-'), ENT_QUOTES, 'UTF-8') ?: '-'; ?></td>
+                    <td><?= htmlspecialchars((string)($data['nama_siswa'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?= htmlspecialchars((string)($data['nama_keluhan'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td>-</td>
+                    <td>
+                        <?= htmlspecialchars((string)($data['suhu'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
+                        <?= !empty($data['suhu']) ? '°C' : ''; ?>
+                    </td>
+                    <td><?= htmlspecialchars((string)($data['tekanan_darah'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?= htmlspecialchars((string)($data['kondisi'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?= htmlspecialchars((string)($data['petugas'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td>
+                        <a href="edit.php?id=<?= (int)$data['id']; ?>" class="btn-edit">Edit</a>
 
-                <td>
-                    <?= htmlspecialchars((string)($data['tanggal'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
+                        <a href="hapus.php?id=<?= (int)$data['id']; ?>"
+                           class="btn-delete"
+                           onclick="return confirm('Yakin ingin menghapus data kunjungan ini?')">
+                            Hapus
+                        </a>
+                    </td>
+                </tr>
+            <?php endwhile; ?>
 
-                <td>
-                    <?= htmlspecialchars((string)($data['jam'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['jam_keluar'] ?? '-'), ENT_QUOTES, 'UTF-8') ?: '-'; ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['nama_siswa'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['nama_keluhan'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['nama_obat'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['suhu'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                    <?= !empty($data['suhu']) ? '°C' : ''; ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['tekanan_darah'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['kondisi'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
-
-                <td>
-                    <?= htmlspecialchars((string)($data['petugas'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
-                </td>
-
-                <td>
-                    <a
-                        href="edit.php?id=<?= (int)$data['id']; ?>"
-                        class="btn-edit">
-                        Edit
-                    </a>
-
-                    <a
-                        href="hapus.php?id=<?= (int)$data['id']; ?>"
-                        class="btn-delete"
-                        onclick="return confirm('Yakin ingin menghapus data kunjungan ini?')">
-                        Hapus
-                    </a>
-                </td>
-            </tr>
-        <?php endwhile; ?>
-
-        <?php if (mysqli_num_rows($query) === 0): ?>
+        <?php else: ?>
             <tr>
                 <td colspan="12">Belum ada data kunjungan.</td>
             </tr>
