@@ -15,12 +15,15 @@ try {
             kunjungan.*,
             siswa.nama AS nama_siswa,
             keluhan.nama_keluhan,
+            obat.nama_obat,
             users.nama AS petugas
         FROM kunjungan
         LEFT JOIN siswa
             ON kunjungan.siswa_id = siswa.id
         LEFT JOIN keluhan
             ON kunjungan.keluhan_id = keluhan.id
+        LEFT JOIN obat
+            ON kunjungan.obat_id = obat.id
         LEFT JOIN users
             ON kunjungan.petugas_id = users.id
         ORDER BY kunjungan.tanggal DESC, kunjungan.jam DESC
@@ -66,6 +69,12 @@ try {
     </a>
 </div>
 
+<?php if (isset($_GET['status']) && $_GET['status'] === 'sukses'): ?>
+    <div style="background: #dcfce7; color: #166534; padding: 12px 20px; border-radius: 8px; margin: 15px 30px; border: 1px solid #bbf7d0; font-weight: 500;">
+        ✓ Data kunjungan berhasil disimpan!
+    </div>
+<?php endif; ?>
+
 <div class="table-wrapper">
     <table>
         <thead>
@@ -97,7 +106,7 @@ try {
                     <td><?= htmlspecialchars((string)($data['jam_keluar'] ?? '-'), ENT_QUOTES, 'UTF-8') ?: '-'; ?></td>
                     <td><?= htmlspecialchars((string)($data['nama_siswa'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
                     <td><?= htmlspecialchars((string)($data['nama_keluhan'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td>-</td>
+                    <td><?= htmlspecialchars((string)($data['nama_obat'] ?? '-'), ENT_QUOTES, 'UTF-8') ?: '-'; ?></td>
                     <td>
                         <?= htmlspecialchars((string)($data['suhu'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
                         <?= !empty($data['suhu']) ? '°C' : ''; ?>
@@ -128,4 +137,3 @@ try {
 
 </body>
 </html>
-```
