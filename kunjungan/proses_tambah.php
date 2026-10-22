@@ -6,7 +6,8 @@ ini_set('display_errors', '1');
 
 include "../config/koneksi.php";
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEHTTP ERROR 500
+ST_METHOD'] !== 'POST') {
     header("Location: index.php");
     exit;
 }
