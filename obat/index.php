@@ -1,71 +1,60 @@
 <?php
-session_start();
-require_once "../config/koneksi.php";
+include "../config/koneksi.php";
 
-if (!isset($_SESSION['id'])) {
-    header("Location: ../auth/login.php");
-    exit;
-}
-
-$cari = trim($_GET['cari'] ?? '');
+$cari = "";
 
 // Pesan dari proses hapus
-$pesan = $_GET['pesan'] ?? '';
+if (isset($_GET['pesan'])) {
 
-$pesanList = [
-    'hapus_berhasil' => 'Obat berhasil dihapus.',
-    'hapus_gagal' => 'Obat gagal dihapus.',
-    'obat_masih_digunakan' => 'Obat tidak dapat dihapus karena masih digunakan dalam data kunjungan.'
-];
+    if ($_GET['pesan'] == 'hapus_berhasil') {
+        echo "<script>alert('Obat berhasil dihapus.');</script>";
+    }
 
-if (isset($pesanList[$pesan])) {
-    echo '<script>alert(' .
-        json_encode($pesanList[$pesan]) .
-        ');</script>';
+    if ($_GET['pesan'] == 'hapus_gagal') {
+        echo "<script>alert('Obat gagal dihapus.');</script>";
+    }
+
+    if ($_GET['pesan'] == 'obat_masih_digunakan') {
+        echo "<script>alert('Obat tidak dapat dihapus karena masih digunakan dalam data kunjungan.');</script>";
+    }
 }
 
-// Query data obat
-if ($cari !== '') {
-    $stmt = mysqli_prepare(
+if (isset($_GET['cari'])) {
+    $cari = $_GET['cari'];
+
+    $query = mysqli_query(
         $conn,
         "SELECT * FROM obat
-         WHERE nama_obat LIKE ?
-         OR kategori LIKE ?
-         ORDER BY id DESC"
+        WHERE nama_obat LIKE '%$cari%'
+        OR keterangan LIKE '%$cari%'
+        ORDER BY id DESC"
     );
-
-    $keyword = '%' . $cari . '%';
-
-    mysqli_stmt_bind_param(
-        $stmt,
-        "ss",
-        $keyword,
-        $keyword
-    );
-
-    mysqli_stmt_execute($stmt);
-    $query = mysqli_stmt_get_result($stmt);
 } else {
     $query = mysqli_query(
         $conn,
-        "SELECT * FROM obat ORDER BY id DESC"
+        "SELECT * FROM obat
+        ORDER BY id DESC"
     );
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="id">
+
+<html>
 
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Data Obat</title>
 
-    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link
+        rel="stylesheet"
+        href="../assets/css/dashboard.css"
+    >
+
 </head>
 
-<body>
-
+<!-- NAVBAR -->
 <header class="navbar">
     <div class="navbar-logo">
         <span class="logo-icon">🏥</span>
@@ -81,70 +70,235 @@ if ($cari !== '') {
     </a>
 </header>
 
+
+<!-- ACTION BAR -->
 <div class="action-bar">
 
     <a href="tambah.php" class="btn-tambah">
         + Tambah Obat
     </a>
 
-    <form method="GET" action="index.php" class="search-form">
+    <form method="GET" action="" class="search-form">
 
-        <input
-            type="text"
-            name="cari"
-            placeholder="Cari nama atau kategori..."
-            value="<?= htmlspecialchars($cari, ENT_QUOTES, 'UTF-8') ?>"
-        >
+    <input
+        type="text"
+        name="cari"
+        placeholder="Cari nama atau kategori..."
+        value="<?= htmlspecialchars($_GET['cari'] ?? '') ?>"
+    >
 
-        <button type="submit" class="btn-cari">
-            Cari
-        </button>
+    <button type="submit" class="btn-cari">
+        Cari
+    </button>
 
-        <?php if ($cari !== ''): ?>
-            <a href="index.php" class="btn-reset">
-                Reset
-            </a>
-        <?php endif; ?>
+    <?php if ($cari != "") { ?>
 
-    </form>
+        <a href="index.php" class="btn-reset">
+            Reset
+        </a>
+
+    <?php } ?>
+
+</form>
 
 </div>
 
-<div class="table-wrapper">
+    </div>
+</div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Nama Obat</th>
-                <th>Kategori</th>
-                <th>Stok</th>
-                <th>Satuan</th>
-                <th>Tanggal Expired</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
+        </form>
 
-        <tbody>
 
-        <?php if ($query && mysqli_num_rows($query) > 0): ?>
+        <div class="table-wrapper">
 
-            <?php $no = 1; ?>
+            <table>
 
-            <?php while ($data = mysqli_fetch_assoc($query)): ?>
-                <tr>
-                    <td><?= $no++ ?></td>
+                <thead>
 
-                    <td>
-                        <?= htmlspecialchars((string) $data['nama_obat'], ENT_QUOTES, 'UTF-8') ?>
-                    </td>
+                    <tr>
 
-                    <td>
-                        <?= htmlspecialchars((string) $data['kategori'], ENT_QUOTES, 'UTF-8') ?>
-                    </td>
+                        <th>No</th>
 
-                    <td>
-                        <?= htmlspecialchars((string) $data['stok'], ENT_QUOTES, 'UTF-8') ?>
-                    </td>
+                        <th>Nama Obat</th>
 
-                   
+                        <th>Kategori</th>
+
+                        <th>Stok</th>
+
+                        <th>Satuan</th>
+
+                        <th>Tanggal Expired</th>
+
+                        <th>Aksi</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                <?php
+
+                if (
+                    $query &&
+                    mysqli_num_rows($query) > 0
+                ) {
+
+                    $no = 1;
+
+                    while (
+                        $data =
+                        mysqli_fetch_assoc($query)
+                    ) {
+
+                ?>
+
+                    <tr>
+
+                        <td>
+
+                            <?php
+                            echo $no++;
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo htmlspecialchars(
+                                $data['nama_obat']
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo htmlspecialchars(
+                                $data['kategori']
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo htmlspecialchars(
+                                $data['stok']
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo htmlspecialchars(
+                                $data['satuan']
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <?php
+
+                            echo htmlspecialchars(
+                                $data['expired']
+                            );
+
+                            ?>
+
+                        </td>
+
+
+                        <td>
+
+                            <a
+                                href="edit.php?id=<?php
+                                echo $data['id'];
+                                ?>"
+                                class="btn-edit"
+                            >
+
+                                Edit
+
+                            </a>
+
+
+                            <a
+                                href="hapus.php?id=<?php
+                                echo $data['id'];
+                                ?>"
+                                class="btn-delete"
+                                onclick="return confirm(
+                                'Yakin ingin menghapus obat ini?'
+                                )"
+                            >
+
+                                Hapus
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                <?php
+
+                    }
+
+                } else {
+
+                ?>
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="empty-table"
+                        >
+
+                            Data obat belum tersedia.
+
+                        </td>
+
+                    </tr>
+
+                <?php
+
+                }
+
+                ?>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>ini juga
